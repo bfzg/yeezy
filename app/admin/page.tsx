@@ -1,0 +1,33 @@
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { AdminProductManager } from "@/components/AdminProductManager";
+import { StoreChrome } from "@/components/Chrome";
+import { requireAdmin } from "@/lib/auth";
+import { getAdminProducts, getCart, getSessionId } from "@/lib/db";
+
+export default async function AdminPage() {
+  const admin = await requireAdmin();
+  if (!admin) redirect("/login");
+
+  const sessionId = await getSessionId();
+  const cart = getCart(sessionId);
+  const products = getAdminProducts();
+
+  return (
+    <main className="shell admin-shell">
+      <StoreChrome cartCount={cart.reduce((sum, line) => sum + line.quantity, 0)} backHref="/" />
+      <section className="admin-header">
+        <div>
+          <h1>库存管理</h1>
+          <p>商品管理 / 库存</p>
+        </div>
+        <div className="admin-header-actions">
+          <Link className="text-button" href="/admin/products/new">新增商品</Link>
+          <Link className="text-button" href="/admin/orders">订单管理</Link>
+          <Link className="text-button" href="/admin/payments">支付设置</Link>
+        </div>
+      </section>
+      <AdminProductManager products={products} />
+    </main>
+  );
+}

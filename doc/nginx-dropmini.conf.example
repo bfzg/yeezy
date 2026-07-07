@@ -1,0 +1,101 @@
+# =============================================================================
+# DropMini Nginx 示例（dropmini.com + www.dropmini.com）
+#
+# 本机约定：
+#   - DropMini Next.js：127.0.0.1:40322
+#   - EteDrop 可继续使用 127.0.0.1:40321
+#
+# DNS：
+#   dropmini.com     A -> 43.153.143.37
+#   www.dropmini.com A -> 43.153.143.37
+#
+# 启用方式：
+#   sudo cp nginx-dropmini.conf.example /etc/nginx/sites-available/dropmini
+#   sudo ln -sf /etc/nginx/sites-available/dropmini /etc/nginx/sites-enabled/dropmini
+#   # 若 http{} 里已有同名 map，删本文件中的 map 段
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# 证书：
+#   sudo certbot certonly --webroot -w /var/www/html -d dropmini.com -d www.dropmini.com
+# =============================================================================
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+upstream dropmini_next {
+    server 127.0.0.1:40322;
+    keepalive 16;
+}
+
+# -----------------------------------------------------------------------------
+# HTTP：ACME + 跳 HTTPS
+# -----------------------------------------------------------------------------
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name dropmini.com www.dropmini.com;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+
+    location / {
+        return 301 https://dropmini.com$request_uri;
+    }
+}
+
+# -----------------------------------------------------------------------------
+# HTTPS：www -> 根域
+# -----------------------------------------------------------------------------
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name www.dropmini.com;
+
+    ssl_certificate     /etc/letsencrypt/live/dropmini.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/dropmini.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    return 301 https://dropmini.com$request_uri;
+}
+
+# -----------------------------------------------------------------------------
+# HTTPS：DropMini Next.js
+# -----------------------------------------------------------------------------
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name dropmini.com;
+
+    ssl_certificate     /etc/letsencrypt/live/dropmini.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/dropmini.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    client_max_body_size 20M;
+
+    location / {
+        proxy_pass http://dropmini_next;
+        proxy_http_version 1.1;
+
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+
+    access_log /var/log/nginx/dropmini-access.log;
+    error_log  /var/log/nginx/dropmini-error.log;
+}

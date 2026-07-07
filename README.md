@@ -39,6 +39,9 @@ Copy `.env.example` to `.env.local` (or `.env`) and fill in your values. **Do no
 | Variable | Required | Description |
 | --- | --- | --- |
 | `SHIPPING_FLAT_RATE_USD` | No | Flat shipping fee in USD (default `24.99`). |
+| `DEFAULT_ADMIN_EMAIL` | No | Default admin email created when the database has no admin user. |
+| `DEFAULT_ADMIN_PASSWORD` | No | Default admin password for the seeded admin account. |
+| `DEFAULT_ADMIN_NAME` | No | Default admin display name. |
 | `PAYPAL_CLIENT_ID` | For PayPal | Client ID from [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/). |
 | `PAYPAL_SECRET` | For PayPal | Secret for the same PayPal app. |
 | `PAYPAL_API_BASE_URL` | For PayPal | Sandbox: `https://api-m.sandbox.paypal.com` · Live: `https://api-m.paypal.com` |
@@ -52,17 +55,18 @@ Copy `.env.example` to `.env.local` (or `.env`) and fill in your values. **Do no
 1. Create a Sandbox app in the PayPal Developer Dashboard.
 2. Set `PAYPAL_CLIENT_ID`, `PAYPAL_SECRET`, and `PAYPAL_API_BASE_URL=https://api-m.sandbox.paypal.com` in `.env.local`.
 3. Restart the dev server.
-4. PayPal can also be configured in the admin UI at `/admin/payments`; values saved there are stored in the local SQLite database (`data/yezi.db`), not in git.
+4. PayPal can also be configured in the admin UI at `/admin/settings`; values saved there are stored in the local SQLite database (`data/yezi.db`), not in git.
 
 For production, switch to Live credentials and `https://api-m.paypal.com` only after PayPal app review.
 
 ### Default admin account
 
-On first run, a demo admin is created:
+On first run, a demo admin is created from `.env.local`:
 
 ```text
-Email:    admin@yezi.local
-Password: admin123
+DEFAULT_ADMIN_EMAIL=admin@yezi.local
+DEFAULT_ADMIN_PASSWORD=admin123
+DEFAULT_ADMIN_NAME=YEZI ADMIN
 ```
 
 **Change this password before deploying to any shared or public environment.**
@@ -85,7 +89,7 @@ More detail: [doc/功能说明.md](./doc/功能说明.md) · [doc/开发文档.m
 
 - `.env.example` contains **placeholder values only**, not real credentials. Never put production secrets in example files.
 - `.env`, `.env.local`, and SQLite files under `data/` are gitignored.
-- Payment secrets entered in `/admin/payments` are persisted in `data/yezi.db` — back up and protect that file in production.
+- Payment secrets entered in `/admin/settings` are persisted in `data/yezi.db` — back up and protect that file in production.
 - The default admin password is for local demo only; rotate it before going live.
 - Do not expose PayPal Client Secret or Stripe secret keys in client-side code or public repos.
 
@@ -120,6 +124,9 @@ npm run dev
 | 变量 | 是否必填 | 说明 |
 | --- | --- | --- |
 | `SHIPPING_FLAT_RATE_USD` | 否 | 固定运费（美元），默认 `24.99` |
+| `DEFAULT_ADMIN_EMAIL` | 否 | 本地数据库没有管理员时自动创建的默认管理员邮箱 |
+| `DEFAULT_ADMIN_PASSWORD` | 否 | 默认管理员密码 |
+| `DEFAULT_ADMIN_NAME` | 否 | 默认管理员显示名 |
 | `PAYPAL_CLIENT_ID` | PayPal 必填 | PayPal 开发者后台的应用 Client ID |
 | `PAYPAL_SECRET` | PayPal 必填 | 同一应用的 Secret |
 | `PAYPAL_API_BASE_URL` | PayPal 必填 | 沙盒：`https://api-m.sandbox.paypal.com` · 生产：`https://api-m.paypal.com` |
@@ -133,7 +140,7 @@ npm run dev
 1. 在 [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/) 创建 Sandbox 应用。
 2. 在 `.env.local` 中填写 Client ID、Secret 和沙盒 API 地址。
 3. 重启开发服务器。
-4. 也可在 `/admin/payments` 后台可视化配置；保存后写入本地 SQLite（`data/yezi.db`），不会进入 Git。
+4. 也可在 `/admin/settings` 后台可视化配置；保存后写入本地 SQLite（`data/yezi.db`），不会进入 Git。
 
 `.env.example` 里只有**示例占位符**，不是你的真实配置。生产环境请使用 Live 凭证，并在 PayPal 审核通过后再切换 API 地址。
 
@@ -142,8 +149,9 @@ npm run dev
 首次启动会自动创建演示管理员：
 
 ```text
-邮箱：admin@yezi.local
-密码：admin123
+DEFAULT_ADMIN_EMAIL=admin@yezi.local
+DEFAULT_ADMIN_PASSWORD=admin123
+DEFAULT_ADMIN_NAME=YEZI ADMIN
 ```
 
 **部署到公网或共享环境前，请务必修改密码。**

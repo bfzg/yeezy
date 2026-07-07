@@ -6,7 +6,7 @@ import { LoginRegister } from "@/components/LoginRegister";
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
-  if (user) redirect("/");
+  if (user) redirect(user.role === "admin" ? "/admin" : "/");
 
   const sessionId = await getSessionId();
   const cart = getCart(sessionId);

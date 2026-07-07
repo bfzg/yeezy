@@ -3,7 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { cookies } from "next/headers";
-import { getShippingCents, paymentEnv } from "./config";
+import { adminEnv, getShippingCents, paymentEnv } from "./config";
 import { seedProducts } from "./products";
 import { type CartLine, formatMoney } from "./shared";
 
@@ -241,7 +241,7 @@ function ensureAdmin(conn: DatabaseSync) {
   const existing = conn.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get();
   if (existing) return;
   conn.prepare("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)")
-    .run("admin@yezi.local", "dev-admin", "YEZI ADMIN", "admin");
+    .run(adminEnv.defaultAdminEmail.toLowerCase(), "env-admin", adminEnv.defaultAdminName, "admin");
 }
 
 function archiveLegacyDeletedProducts(conn: DatabaseSync) {

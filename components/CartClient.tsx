@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Instagram, Mail, MessageCircle, Music2, Twitter } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatMoney, type CartLine } from "@/lib/shared";
 import { showToast } from "@/lib/toast";
@@ -75,7 +76,44 @@ function totalsFor(lines: CartLine[], shippingCents: number) {
   };
 }
 
-export function CartClient({ shippingCents }: { shippingCents: number }) {
+function normalizedHandle(value: string) {
+  return value.trim().replace(/^@+/, "");
+}
+
+function instagramUrl(value: string) {
+  return `https://www.instagram.com/${normalizedHandle(value)}`;
+}
+
+function tiktokUrl(value: string) {
+  return `https://www.tiktok.com/@${normalizedHandle(value)}`;
+}
+
+function twitterUrl(value: string) {
+  return `https://x.com/${normalizedHandle(value)}`;
+}
+
+function whatsappUrl(value: string) {
+  const digits = value.replace(/[^\d]/g, "");
+  return `https://wa.me/${digits}`;
+}
+
+export function CartClient({
+  contactEmail,
+  contactInstagram,
+  contactTikTok,
+  contactTwitter,
+  contactWhatsApp,
+  checkoutPaused,
+  shippingCents,
+}: {
+  contactEmail: string;
+  contactInstagram: string;
+  contactTikTok: string;
+  contactTwitter: string;
+  contactWhatsApp: string;
+  checkoutPaused: boolean;
+  shippingCents: number;
+}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [lines, setLines] = useState<CartLine[]>([]);
@@ -195,93 +233,141 @@ export function CartClient({ shippingCents }: { shippingCents: number }) {
 
   return (
     <main className="checkout">
-      <form ref={formRef} action={submit}>
-        <div className="express-pay">
-          <ApplePayButton />
-          <PayPalButton
-            disabled={lines.length === 0}
-            getPayload={getPayPalPayload}
-            onPaid={handlePayPalPaid}
-          />
-        </div>
-        <hr className="my-6" />
-        <h2 className="section-title mt-6">SHIPPING ADDRESS</h2>
-        <div className="form-grid">
-          <label className="field">
-            <span>FIRST NAME</span>
-            <input name="firstName" onChange={(event) => updateShippingField("firstName", event.target.value)} required value={shippingAddress.firstName} />
-          </label>
-          <label className="field">
-            <span>LAST NAME</span>
-            <input name="lastName" onChange={(event) => updateShippingField("lastName", event.target.value)} required value={shippingAddress.lastName} />
-          </label>
-          <label className="field full">
-            <span>ADDRESS</span>
-            <input
-              name="address"
-              onChange={(event) => updateShippingField("address", event.target.value)}
-              placeholder="START TYPING YOUR ADDRESS..."
-              required
-              value={shippingAddress.address}
-            />
-          </label>
-          <label className="field full">
-            <span>APARTMENT, SUITE, UNIT, ETC. (OPTIONAL)</span>
-            <input
-              name="apartment"
-              onChange={(event) => updateShippingField("apartment", event.target.value)}
-              placeholder="APARTMENT, SUITE, UNIT, FLOOR, ETC."
-              value={shippingAddress.apartment}
-            />
-          </label>
-          <label className="field">
-            <span>CITY</span>
-            <input name="city" onChange={(event) => updateShippingField("city", event.target.value)} required value={shippingAddress.city} />
-          </label>
-          <label className="field">
-            <span>COUNTRY</span>
-            <input name="country" onChange={(event) => updateShippingField("country", event.target.value)} required value={shippingAddress.country} />
-          </label>
-          <label className="field">
-            <span>STATE / PROVINCE</span>
-            <input name="province" onChange={(event) => updateShippingField("province", event.target.value)} required value={shippingAddress.province} />
-          </label>
-          <label className="field">
-            <span>ZIP / POSTAL CODE</span>
-            <input
-              name="postalCode"
-              onChange={(event) => updateShippingField("postalCode", event.target.value)}
-              required
-              value={shippingAddress.postalCode}
-            />
-          </label>
-          <label className="field full">
-            <span>PHONE NUMBER</span>
-            <input
-              name="phone"
-              onChange={(event) => updateShippingField("phone", event.target.value)}
-              placeholder="+852  123 456 7890"
-              required
-              value={shippingAddress.phone}
-            />
-          </label>
-        </div>
-        <p className="muted-note">ENTER YOUR SHIPPING ADDRESS TO SEE AVAILABLE SHIPPING OPTIONS.</p>
-        <label className="field full">
-          <span>EMAIL ADDRESS</span>
-          <input
-            name="email"
-            onChange={(event) => updateShippingField("email", event.target.value)}
-            required
-            type="email"
-            value={shippingAddress.email}
-          />
-        </label>
-        <label className="check-row">
-          <input type="checkbox" defaultChecked />
-          <span>SUBSCRIBE TO UPDATES AND NOTIFICATIONS</span>
-        </label>
-      </form>
+      <section className="checkout-gate" aria-labelledby="checkout-pause-title">
+        <form ref={formRef} action={submit}>
+          <fieldset className="checkout-fields" disabled={checkoutPaused}>
+            <div className="express-pay">
+              <ApplePayButton />
+              <PayPalButton
+                disabled={checkoutPaused || lines.length === 0}
+                getPayload={getPayPalPayload}
+                onPaid={handlePayPalPaid}
+              />
+            </div>
+            <hr className="my-6" />
+            <h2 className="section-title mt-6">SHIPPING ADDRESS</h2>
+            <div className="form-grid">
+              <label className="field">
+                <span>FIRST NAME</span>
+                <input name="firstName" onChange={(event) => updateShippingField("firstName", event.target.value)} required value={shippingAddress.firstName} />
+              </label>
+              <label className="field">
+                <span>LAST NAME</span>
+                <input name="lastName" onChange={(event) => updateShippingField("lastName", event.target.value)} required value={shippingAddress.lastName} />
+              </label>
+              <label className="field full">
+                <span>ADDRESS</span>
+                <input
+                  name="address"
+                  onChange={(event) => updateShippingField("address", event.target.value)}
+                  placeholder="START TYPING YOUR ADDRESS..."
+                  required
+                  value={shippingAddress.address}
+                />
+              </label>
+              <label className="field full">
+                <span>APARTMENT, SUITE, UNIT, ETC. (OPTIONAL)</span>
+                <input
+                  name="apartment"
+                  onChange={(event) => updateShippingField("apartment", event.target.value)}
+                  placeholder="APARTMENT, SUITE, UNIT, FLOOR, ETC."
+                  value={shippingAddress.apartment}
+                />
+              </label>
+              <label className="field">
+                <span>CITY</span>
+                <input name="city" onChange={(event) => updateShippingField("city", event.target.value)} required value={shippingAddress.city} />
+              </label>
+              <label className="field">
+                <span>COUNTRY</span>
+                <input name="country" onChange={(event) => updateShippingField("country", event.target.value)} required value={shippingAddress.country} />
+              </label>
+              <label className="field">
+                <span>STATE / PROVINCE</span>
+                <input name="province" onChange={(event) => updateShippingField("province", event.target.value)} required value={shippingAddress.province} />
+              </label>
+              <label className="field">
+                <span>ZIP / POSTAL CODE</span>
+                <input
+                  name="postalCode"
+                  onChange={(event) => updateShippingField("postalCode", event.target.value)}
+                  required
+                  value={shippingAddress.postalCode}
+                />
+              </label>
+              <label className="field full">
+                <span>PHONE NUMBER</span>
+                <input
+                  name="phone"
+                  onChange={(event) => updateShippingField("phone", event.target.value)}
+                  placeholder="+852  123 456 7890"
+                  required
+                  value={shippingAddress.phone}
+                />
+              </label>
+            </div>
+            <p className="muted-note">ENTER YOUR SHIPPING ADDRESS TO SEE AVAILABLE SHIPPING OPTIONS.</p>
+            <label className="field full">
+              <span>EMAIL ADDRESS</span>
+              <input
+                name="email"
+                onChange={(event) => updateShippingField("email", event.target.value)}
+                required
+                type="email"
+                value={shippingAddress.email}
+              />
+            </label>
+            <label className="check-row">
+              <input type="checkbox" defaultChecked />
+              <span>SUBSCRIBE TO UPDATES AND NOTIFICATIONS</span>
+            </label>
+          </fieldset>
+        </form>
+        {checkoutPaused ? (
+          <div className="checkout-lock-overlay">
+            <div className="checkout-lock-copy">
+              <p className="checkout-lock-kicker">EARLY ACCESS</p>
+              <h1 id="checkout-pause-title">ONLINE CHECKOUT IS PAUSED</h1>
+              <p>
+                WE ARE COLLECTING REQUESTS BEFORE OPENING DIRECT PAYMENT. SEND THE ITEM NAME, SIZE,
+                AND DESTINATION TO RESERVE OR ASK FOR SHIPPING.
+              </p>
+              <div className="checkout-contact-list">
+                {contactEmail ? (
+                  <a className="checkout-contact-button email" href={`mailto:${contactEmail}`}>
+                    <Mail size={17} strokeWidth={2.4} />
+                    <span>{contactEmail}</span>
+                  </a>
+                ) : null}
+                {contactWhatsApp ? (
+                  <a className="checkout-contact-button whatsapp" href={whatsappUrl(contactWhatsApp)} rel="noreferrer" target="_blank">
+                    <MessageCircle size={17} strokeWidth={2.4} />
+                    <span>WhatsApp {contactWhatsApp}</span>
+                  </a>
+                ) : null}
+                {contactInstagram ? (
+                  <a className="checkout-contact-button instagram" href={instagramUrl(contactInstagram)} rel="noreferrer" target="_blank">
+                    <Instagram size={17} strokeWidth={2.4} />
+                    <span>Instagram DM {contactInstagram}</span>
+                  </a>
+                ) : null}
+                {contactTikTok ? (
+                  <a className="checkout-contact-button tiktok" href={tiktokUrl(contactTikTok)} rel="noreferrer" target="_blank">
+                    <Music2 size={17} strokeWidth={2.4} />
+                    <span>TikTok {contactTikTok}</span>
+                  </a>
+                ) : null}
+                {contactTwitter ? (
+                  <a className="checkout-contact-button twitter" href={twitterUrl(contactTwitter)} rel="noreferrer" target="_blank">
+                    <Twitter size={17} strokeWidth={2.4} />
+                    <span>X / Twitter {contactTwitter}</span>
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
 
       <aside className="cart-summary">
         {lines.map((line) => (

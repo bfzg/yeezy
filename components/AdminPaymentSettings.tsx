@@ -32,9 +32,15 @@ export function AdminPaymentSettings({
   }
 
   return (
-    <section className="admin-wide">
+    <section className="settings-content">
+      <div className="settings-card-head">
+        <div>
+          <h2>支付设置</h2>
+          <p>配置 PayPal / Apple Pay</p>
+        </div>
+      </div>
       <div className="admin-payment-grid">
-        <div className="admin-payment-card">
+        <div className="settings-panel">
           <div className="admin-payment-head">
             <strong>PayPal</strong>
             <label className="admin-toggle">
@@ -112,7 +118,7 @@ export function AdminPaymentSettings({
           </div>
         </div>
 
-        <div className="admin-payment-card flex flex-col gap-4">
+        <div className="settings-panel">
           <div className="admin-payment-head">
             <strong>Apple Pay</strong>
             <label className="admin-toggle">

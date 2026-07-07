@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { db } from "./db";
+import { adminEnv } from "./config";
 
 const SESSION_COOKIE = "yezi_user_session";
 const SESSION_DAYS = 14;
@@ -16,13 +17,15 @@ type UserRow = CurrentUser & {
   password_hash: string;
 };
 
-function hashPassword(password: string, salt = randomBytes(16).toString("hex")) {
+export function hashPassword(password: string, salt = randomBytes(16).toString("hex")) {
   const digest = createHash("sha256").update(`${salt}:${password}`).digest("hex");
   return `${salt}:${digest}`;
 }
 
-function verifyPassword(password: string, stored: string) {
-  if (stored === "dev-admin") return password === "admin123";
+export function verifyPassword(password: string, stored: string) {
+  if (stored === "dev-admin" || stored === "env-admin") {
+    return password === adminEnv.defaultAdminPassword;
+  }
   const [salt, digest] = stored.split(":");
   if (!salt || !digest) return false;
   const candidate = hashPassword(password, salt).split(":")[1];

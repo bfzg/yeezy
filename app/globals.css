@@ -202,6 +202,78 @@
     @apply grid grid-cols-2 gap-[18px];
   }
 
+  .checkout-gate {
+    @apply relative p-9;
+  }
+
+  .checkout-fields {
+    @apply m-0 border-0 p-0;
+  }
+
+  .checkout-fields:disabled {
+    @apply opacity-100;
+  }
+
+  .checkout-fields:disabled input,
+  .checkout-fields:disabled button {
+    @apply cursor-not-allowed;
+  }
+
+  .checkout-lock-overlay {
+    @apply absolute inset-0 z-10 flex items-start justify-center border border-ink bg-white/70 px-9 py-24 text-center backdrop-blur-[2px];
+  }
+
+  .checkout-lock-copy {
+    @apply sticky top-28 grid max-w-[520px] gap-4 bg-white/80 px-7 py-8 shadow-[8px_8px_0_rgba(17,17,17,0.12)];
+  }
+
+  .checkout-lock-kicker,
+  .checkout-lock-copy p,
+  .checkout-lock-copy h1 {
+    @apply m-0;
+  }
+
+  .checkout-lock-kicker {
+    @apply text-xs text-mute;
+  }
+
+  .checkout-lock-copy h1 {
+    @apply text-[28px] leading-tight;
+  }
+
+  .checkout-lock-copy p {
+    @apply leading-snug;
+  }
+
+  .checkout-contact-list {
+    @apply mt-2 grid gap-2 text-sm;
+  }
+
+  .checkout-contact-button {
+    @apply inline-flex min-h-10 items-center justify-center gap-2 border border-transparent px-3 normal-case text-white transition-transform duration-150 hover:-translate-y-0.5;
+  }
+
+  .checkout-contact-button.email {
+    @apply border-ink bg-ink;
+  }
+
+  .checkout-contact-button.whatsapp {
+    background: #25d366;
+  }
+
+  .checkout-contact-button.instagram {
+    background: linear-gradient(90deg, #833ab4 0%, #e1306c 52%, #f77737 100%);
+  }
+
+  .checkout-contact-button.tiktok {
+    background: #111;
+    box-shadow: inset 4px 0 0 #25f4ee, inset -4px 0 0 #fe2c55;
+  }
+
+  .checkout-contact-button.twitter {
+    background: #1da1f2;
+  }
+
   .pay-button {
     @apply flex h-[50px] w-full items-center justify-center overflow-hidden bg-[#8d8d8d] px-4 text-center text-2xl font-bold text-white transition-transform duration-150;
     line-height: 1.05;
@@ -688,6 +760,54 @@
     @apply mx-auto mb-14;
   }
 
+  .settings-tabs {
+    @apply mx-auto mb-14 w-full;
+  }
+
+  .settings-tab-list {
+    @apply flex border-b border-ink;
+  }
+
+  .settings-tab-list button {
+    @apply min-h-[54px] min-w-[150px] border border-b-0 border-ink bg-paper px-5 text-center text-mute;
+  }
+
+  .settings-tab-list button + button {
+    @apply -ml-px;
+  }
+
+  .settings-tab-list button.active {
+    @apply relative top-px bg-ink text-paper;
+  }
+
+  .settings-tab-panel {
+    @apply border border-t-0 border-ink bg-paper p-7;
+  }
+
+  .settings-content {
+    @apply grid gap-5;
+  }
+
+  .settings-card-head {
+    @apply flex items-start justify-between gap-5 border-b border-[#ddd] pb-4;
+  }
+
+  .settings-card-head h2 {
+    @apply m-0 text-2xl;
+  }
+
+  .settings-card-head p {
+    @apply mb-0 mt-2 text-mute;
+  }
+
+  .settings-panel {
+    @apply grid gap-4 border border-[#ddd] bg-[#fafafa] p-4;
+  }
+
+  .settings-form {
+    @apply max-w-[780px];
+  }
+
   .admin-payment-grid {
     @apply grid gap-5;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -986,6 +1106,14 @@
 
   .admin-payment-grid {
     @apply grid-cols-1;
+  }
+
+  .settings-tab-list button {
+    @apply min-w-0 flex-1 px-3;
+  }
+
+  .settings-tab-panel {
+    @apply p-4;
   }
 
   .order-confirmation-grid,

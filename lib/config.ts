@@ -1,5 +1,11 @@
 const DEFAULT_SHIPPING_CENTS = 2499;
 
+export const adminEnv = {
+  defaultAdminEmail: process.env.DEFAULT_ADMIN_EMAIL ?? "admin@yezi.local",
+  defaultAdminPassword: process.env.DEFAULT_ADMIN_PASSWORD ?? "admin123",
+  defaultAdminName: process.env.DEFAULT_ADMIN_NAME ?? "YEZI ADMIN",
+};
+
 export const paymentEnv = {
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
   paypalClientId: process.env.PAYPAL_CLIENT_ID ?? "",

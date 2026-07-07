@@ -15,13 +15,13 @@ export function LoginRegister() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(Object.fromEntries(formData.entries()))
     });
+    const payload = await response.json();
     if (!response.ok) {
-      const payload = await response.json();
       showToast(payload.error ?? "请求失败", "error");
       return;
     }
     showToast(mode === "login" ? "登录成功" : "账户已创建", "success");
-    router.push("/");
+    router.push(payload.user?.role === "admin" ? "/admin" : "/");
     router.refresh();
   }
 

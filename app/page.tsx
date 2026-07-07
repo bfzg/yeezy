@@ -6,27 +6,27 @@ import { absoluteUrl, siteConfig } from "@/lib/site";
 const categoryMeta: Record<string, { title: string; description: string }> = {
   new: {
     title: "New Arrivals",
-    description: "Shop the latest YEZI apparel, footwear, slides, and accessories.",
+    description: "Shop the latest collectible plush dolls, mini models, and hobby display pieces.",
   },
   mens: {
     title: "Mens",
-    description: "Explore YEZI menswear: technical outerwear, jackets, denim, and everyday uniform pieces.",
+    description: "Explore curated mini collectibles, display pieces, and hobby items.",
   },
   womens: {
     title: "Womens",
-    description: "Explore YEZI womenswear: quiet outerwear, sculptural layers, and neutral wardrobe pieces.",
+    description: "Explore soft plush, collectible figures, and gift-ready miniatures.",
   },
   footwear: {
     title: "Footwear",
-    description: "Shop YEZI footwear, including minimal boots and sculptural everyday silhouettes.",
+    description: "Shop detailed model pieces and compact collectibles for display.",
   },
   accessories: {
     title: "Accessories",
-    description: "Shop YEZI accessories, bags, and eyewear in a restrained black-and-neutral palette.",
+    description: "Shop small accessories, display items, and collector-friendly pieces.",
   },
   slides: {
     title: "Slides",
-    description: "Shop YEZI slides with soft curves, thick soles, and minimal everyday styling.",
+    description: "Shop compact hobby pieces, plush characters, and mini display favorites.",
   },
 };
 
@@ -39,6 +39,7 @@ export async function generateMetadata({
   const category = params.category ?? "new";
   const copy = categoryMeta[category] ?? categoryMeta.new;
   const canonical = category === "new" ? "/" : `/?category=${category}`;
+  const pageTitle = `${copy.title} | ${siteConfig.name}`;
 
   return {
     title: copy.title,
@@ -47,14 +48,14 @@ export async function generateMetadata({
       canonical,
     },
     openGraph: {
-      title: `${copy.title} | YEZI`,
+      title: pageTitle,
       description: copy.description,
       url: absoluteUrl(canonical),
       images: ["/products/pk-01.png"],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${copy.title} | YEZI`,
+      title: pageTitle,
       description: copy.description,
       images: ["/products/pk-01.png"],
     },

@@ -1,32 +1,36 @@
 import type { Metadata } from "next";
 import { ToastHost } from "@/components/ToastHost";
-import { absoluteUrl, siteConfig } from "@/lib/site";
+import { absoluteUrl, siteConfig, siteTitle } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   applicationName: siteConfig.name,
   title: {
-    default: "YEZI | Minimal Apparel, Footwear & Accessories",
-    template: "%s | YEZI",
+    default: siteTitle,
+    template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
   keywords: [
-    "YEZI",
-    "minimal fashion",
-    "black apparel",
-    "technical outerwear",
-    "slides",
-    "footwear",
-    "accessories",
+    siteConfig.name,
+    "collectible plush",
+    "plush dolls",
+    "military models",
+    "tank models",
+    "aircraft miniatures",
+    "hobby collectibles",
   ],
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
     siteName: siteConfig.name,
-    title: "YEZI | Minimal Apparel, Footwear & Accessories",
+    title: siteTitle,
     description: siteConfig.description,
     url: absoluteUrl("/"),
     images: [
@@ -34,13 +38,13 @@ export const metadata: Metadata = {
         url: "/products/pk-01.png",
         width: 1200,
         height: 1200,
-        alt: "YEZI black parka",
+        alt: `${siteConfig.name} product`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "YEZI | Minimal Apparel, Footwear & Accessories",
+    title: siteTitle,
     description: siteConfig.description,
     images: ["/products/pk-01.png"],
   },

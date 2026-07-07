@@ -1,8 +1,8 @@
 export const siteConfig = {
-  name: "YEZI",
+  name: process.env.NEXT_PUBLIC_SITE_NAME ?? "DropMini",
   url: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  description:
-    "YEZI is a minimal fashion shop for sculptural apparel, footwear, slides, and accessories with a quiet black-and-neutral design language.",
+  description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION
+    ?? "DropMini is a global shop for collectible plush dolls, military tank models, aircraft miniatures, and display-ready hobby pieces.",
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "",
   contactInstagram: process.env.NEXT_PUBLIC_CONTACT_INSTAGRAM ?? "",
   contactWhatsApp: process.env.NEXT_PUBLIC_CONTACT_WHATSAPP ?? "",
@@ -10,6 +10,8 @@ export const siteConfig = {
   contactTwitter: process.env.NEXT_PUBLIC_CONTACT_TWITTER ?? "",
   checkoutPaused: parsePublicBoolean(process.env.NEXT_PUBLIC_CHECKOUT_PAUSED, true),
 };
+
+export const siteTitle = `${siteConfig.name} | Collectible Plush & Mini Models`;
 
 export function absoluteUrl(path = "/") {
   return new URL(path, siteConfig.url).toString();

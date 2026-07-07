@@ -6,7 +6,7 @@ import { siteConfig } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Cart",
-  description: "Review your YEZI cart and contact the studio for early purchase requests.",
+  description: "Review your cart and contact the studio for early purchase requests.",
   robots: {
     index: false,
     follow: false,

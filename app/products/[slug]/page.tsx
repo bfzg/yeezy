@@ -4,7 +4,7 @@ import { AddToCart } from "@/components/AddToCart";
 import { StoreChrome } from "@/components/Chrome";
 import { Gallery } from "@/components/Gallery";
 import { formatMoney, getCart, getProductBySlug, getSessionId } from "@/lib/db";
-import { absoluteUrl } from "@/lib/site";
+import { absoluteUrl, siteConfig } from "@/lib/site";
 
 export async function generateMetadata({
   params,
@@ -24,8 +24,9 @@ export async function generateMetadata({
   }
 
   const title = `${product.name} ${product.category}`;
-  const description = product.description || `Shop ${product.name} from YEZI.`;
+  const description = product.description || `Shop ${product.name} from ${siteConfig.name}.`;
   const canonical = `/products/${product.slug}`;
+  const pageTitle = `${title} | ${siteConfig.name}`;
 
   return {
     title,
@@ -35,7 +36,7 @@ export async function generateMetadata({
     },
     openGraph: {
       type: "website",
-      title: `${title} | YEZI`,
+      title: pageTitle,
       description,
       url: absoluteUrl(canonical),
       images: product.gallery.map((image) => ({
@@ -47,7 +48,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} | YEZI`,
+      title: pageTitle,
       description,
       images: product.gallery,
     },

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
@@ -127,6 +127,7 @@ type VariantRow = {
 
 export function db() {
   if (!database) {
+    mkdirSync(path.dirname(dbPath), { recursive: true });
     database = new DatabaseSync(dbPath);
     database.exec(readFileSync(schemaPath, "utf8"));
     migrate(database);

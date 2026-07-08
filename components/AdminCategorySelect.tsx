@@ -1,26 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import { productCategories } from "@/lib/categories";
+import { useMemo, useState } from "react";
+import type { ProductCategory } from "@/lib/categories";
 
 export function AdminCategorySelect({
-  defaultValue = "new",
+  categories,
+  defaultValue = "",
   exclude = []
 }: {
+  categories: ProductCategory[];
   defaultValue?: string;
   exclude?: string[];
 }) {
-  const options = productCategories.filter((category) => !exclude.includes(category.value));
-  const safeDefault = options.some((category) => category.value === defaultValue) ? defaultValue : options[0]?.value ?? "mens";
+  const excludeKey = exclude.join("\n");
+  const options = useMemo(
+    () => {
+      const excluded = new Set(excludeKey ? excludeKey.split("\n") : []);
+      return categories.filter((category) => !excluded.has(category.value));
+    },
+    [categories, excludeKey]
+  );
+  const safeDefault = options.some((category) => category.value === defaultValue) ? defaultValue : "";
   const [value, setValue] = useState(safeDefault);
   const [open, setOpen] = useState(false);
-  const selected = options.find((category) => category.value === value) ?? options[0];
+  const selected = options.find((category) => category.value === value);
 
   return (
     <div className="custom-select">
       <input name="category" type="hidden" value={value} />
       <button className="custom-select-trigger" onClick={() => setOpen((current) => !current)} type="button">
-        <span>{selected.label}</span>
+        <span>{selected?.label ?? "未分类"}</span>
         <span aria-hidden>⌄</span>
       </button>
       {open ? (

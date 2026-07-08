@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { HomeCatalog } from "@/components/HomeCatalog";
-import { getCart, getProducts, getSessionId } from "@/lib/db";
+import { getCart, getProductCategories, getProducts, getSessionId } from "@/lib/db";
 import { absoluteUrl, siteConfig } from "@/lib/site";
 
 const categoryMeta: Record<string, { title: string; description: string }> = {
   new: {
-    title: "New Arrivals",
-    description: "Shop the latest collectible plush dolls, mini models, and hobby display pieces.",
+    title: "All Products",
+    description: "Shop all collectible plush dolls, mini models, and hobby display pieces.",
   },
   mens: {
     title: "Mens",
@@ -37,8 +37,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams;
   const category = params.category ?? "new";
-  const copy = categoryMeta[category] ?? categoryMeta.new;
-  const canonical = category === "new" ? "/" : `/?category=${category}`;
+  const dynamicCategory = getProductCategories().find((item) => item.value === category);
+  const copy = dynamicCategory
+    ? { title: dynamicCategory.label, description: siteConfig.description }
+    : categoryMeta[category] ?? categoryMeta.new;
+  const canonical = category === "new" || category === "all" ? "/" : `/?category=${category}`;
   const pageTitle = `${copy.title} | ${siteConfig.name}`;
 
   return {
@@ -67,6 +70,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
   const sessionId = await getSessionId();
   const cart = getCart(sessionId);
   const products = getProducts(params.category);
+  const categories = getProductCategories();
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const collectionJsonLd = {
     "@context": "https://schema.org",
@@ -103,7 +107,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ c
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionJsonLd) }}
       />
-      <HomeCatalog activeCategory={params.category ?? "new"} cartCount={cartCount} products={products} />
+      <HomeCatalog activeCategory={params.category ?? "new"} cartCount={cartCount} categories={categories} products={products} />
     </>
   );
 }

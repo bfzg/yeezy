@@ -1,11 +1,11 @@
 import type { MetadataRoute } from "next";
-import { productCategories } from "@/lib/categories";
-import { getProducts } from "@/lib/db";
+import { getProductCategories, getProducts } from "@/lib/db";
 import { absoluteUrl } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const categoryUrls = productCategories.map((category) => ({
+  const categories = [{ value: "new" }, ...getProductCategories()];
+  const categoryUrls = categories.map((category) => ({
     url: absoluteUrl(category.value === "new" ? "/" : `/?category=${category.value}`),
     lastModified: now,
     changeFrequency: "weekly" as const,

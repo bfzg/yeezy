@@ -3,11 +3,20 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, Package, Plus, ShoppingBag } from "lucide-react";
+import type { ProductCategory } from "@/lib/categories";
 
 const CART_KEY = "yezi_cart_v1";
 
 type CartLine = {
   quantity: number;
+};
+
+const DEFAULT_NAV_LABELS: Record<string, string> = {
+  mens: "MENS",
+  womens: "WOMENS",
+  footwear: "FOOTWEAR",
+  accessories: "ACCESSORIES",
+  slides: "SLIDES"
 };
 
 export function StoreChrome({
@@ -17,6 +26,7 @@ export function StoreChrome({
   activeCategory = "new",
   onPlusClick,
   expanded = false,
+  categories = [],
   }: {
   cartCount: number;
   backHref?: string;
@@ -24,6 +34,7 @@ export function StoreChrome({
   activeCategory?: string;
   onPlusClick?: () => void;
   expanded?: boolean;
+  categories?: ProductCategory[];
 }) {
   const [scrolled, setScrolled] = useState(false);
   const [liveCartCount, setLiveCartCount] = useState(cartCount);
@@ -101,7 +112,24 @@ export function StoreChrome({
   ].join(" ");
   const iconButtonClass = "inline-flex h-8 w-8 items-center justify-center";
   const rightLinkClass = "inline-flex h-7 items-center justify-center gap-1.5";
-  const navLinkClass = (value: string) => activeCategory === value ? "active" : "";
+  const navLinkClass = (value: string) => {
+    if (value === "new") return activeCategory === "new" || activeCategory === "all" ? "active" : "";
+    return activeCategory === value ? "active" : "";
+  };
+  const navItems = [
+    { value: "new", label: "NEW", href: "/" },
+    ...categories.map((category) => ({
+      value: category.value,
+      label: DEFAULT_NAV_LABELS[category.value] ?? category.label,
+      href: `/?category=${encodeURIComponent(category.value)}`
+    }))
+  ];
+  const navRows = navItems.reduce<Array<typeof navItems>>((rows, item, index) => {
+    const rowIndex = Math.floor(index / 3);
+    rows[rowIndex] = rows[rowIndex] ?? [];
+    rows[rowIndex].push(item);
+    return rows;
+  }, []);
 
   return (
     <header className={topBarClass}>
@@ -134,20 +162,15 @@ export function StoreChrome({
       </div>
       {!backHref ? (
         <nav className="top-nav" aria-label="Product categories">
-          <div>
-            <Link className={navLinkClass("new")} href="/">
-              NEW
-            </Link>
-            <Link className={navLinkClass("mens")} href="/?category=mens">MENS</Link>
-            <Link className={navLinkClass("womens")} href="/?category=womens">WOMENS</Link>
-          </div>
-          <div>
-            <Link className={navLinkClass("footwear")} href="/?category=footwear">FOOTWEAR</Link>
-            <Link className={navLinkClass("accessories")} href="/?category=accessories">ACCESSORIES</Link>
-          </div>
-          <div>
-            <Link className={navLinkClass("slides")} href="/?category=slides">SLIDES</Link>
-          </div>
+          {navRows.map((row, rowIndex) => (
+            <div key={rowIndex}>
+              {row.map((item) => (
+                <Link className={navLinkClass(item.value)} href={item.href} key={item.value}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ))}
         </nav>
       ) : null}
       <div className="flex flex-1 items-center justify-end">

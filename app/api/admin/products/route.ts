@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, deleteProductsByIds } from "@/lib/db";
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     sku,
     slug,
     body.name ?? sku,
-    body.category ?? "new",
+    body.category ?? "",
     priceCents,
     body.description ?? "",
     body.material ?? "",
@@ -115,7 +115,7 @@ export async function PATCH(request: Request) {
     WHERE id = ?
   `).run(
     body.name,
-    body.category,
+    body.category ?? "",
     Math.round(Number(body.price ?? 0) * 100),
     body.description ?? "",
     body.material ?? "",
@@ -145,16 +145,14 @@ export async function DELETE(request: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
   const { searchParams } = new URL(request.url);
-  const id = Number(searchParams.get("id"));
-  if (!id) return NextResponse.json({ error: "Product id is required." }, { status: 400 });
+  const ids = searchParams.get("ids")
+    ? searchParams.get("ids")?.split(",").map((id) => Number(id)) ?? []
+    : [Number(searchParams.get("id"))];
 
-  const hasOrders = db().prepare("SELECT id FROM order_items WHERE product_id = ? LIMIT 1").get(id);
-  if (hasOrders) {
-    db().prepare("UPDATE product_variants SET active = 0 WHERE product_id = ?").run(id);
-    db().prepare("UPDATE products SET archived = 1, stock = 0 WHERE id = ?").run(id);
-    return NextResponse.json({ ok: true, archived: true });
+  try {
+    return NextResponse.json({ ok: true, ...deleteProductsByIds(ids) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Product deletion failed.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
-
-  db().prepare("DELETE FROM products WHERE id = ?").run(id);
-  return NextResponse.json({ ok: true, deleted: true });
 }

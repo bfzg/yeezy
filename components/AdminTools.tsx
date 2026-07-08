@@ -4,9 +4,10 @@ import { useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCategorySelect } from "@/components/AdminCategorySelect";
 import { AdminImageManager, type AdminImageManagerHandle } from "@/components/AdminImageManager";
+import type { ProductCategory } from "@/lib/categories";
 import { showToast } from "@/lib/toast";
 
-export function AdminTools() {
+export function AdminTools({ categories }: { categories: ProductCategory[] }) {
   const router = useRouter();
   const imageManagerRef = useRef<AdminImageManagerHandle>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -29,11 +30,10 @@ export function AdminTools() {
 
   return (
     <section className="admin-wide">
-        <h2 className="section-title">创建商品</h2>
         <form ref={formRef} className="admin-form" action={createProduct}>
           <input name="sku" placeholder="SKU" required />
           <input name="name" placeholder="商品名称" required />
-          <AdminCategorySelect defaultValue="mens" exclude={["new"]} />
+          <AdminCategorySelect categories={categories} defaultValue={categories[0]?.value ?? ""} />
           <label className="unit-field">
             <input name="price" placeholder="价格" required />
             <span>USD</span>

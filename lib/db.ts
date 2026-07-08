@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { cookies } from "next/headers";
+import { defaultProductCategories, normalizeCategoryValue, type AdminProductCategory, type ProductCategory } from "./categories";
 import { adminEnv, getShippingCents, paymentEnv } from "./config";
 import { seedProducts } from "./products";
 import { type CartLine, formatMoney } from "./shared";
@@ -125,19 +126,56 @@ type VariantRow = {
   archived?: number;
 };
 
+type ProductCategoryRow = {
+  value: string;
+  label: string;
+  sort_order: number;
+  product_count?: number;
+};
+
 export function db() {
   if (!database) {
     mkdirSync(path.dirname(dbPath), { recursive: true });
     database = new DatabaseSync(dbPath);
     database.exec(readFileSync(schemaPath, "utf8"));
     migrate(database);
+    ensureProductCategories(database);
     seedIfEmpty(database);
+    normalizeLegacyNewProducts(database);
     ensureVariants(database);
     ensureAdmin(database);
     archiveLegacyDeletedProducts(database);
     backfillPaidAt(database);
   }
   return database;
+}
+
+function ensureProductCategories(conn: DatabaseSync) {
+  const insert = conn.prepare(`
+    INSERT INTO product_categories (value, label, sort_order)
+    VALUES (?, ?, ?)
+    ON CONFLICT(value) DO NOTHING
+  `);
+
+  for (const category of defaultProductCategories) {
+    insert.run(category.value, category.label, category.sortOrder);
+  }
+
+  const productCategories = conn.prepare(`
+    SELECT DISTINCT category
+    FROM products
+    WHERE category NOT IN ('', 'new', 'all')
+  `).all() as Array<{ category: string }>;
+
+  const count = conn.prepare("SELECT COUNT(*) AS count FROM product_categories").get() as { count: number };
+  for (const [index, row] of productCategories.entries()) {
+    const value = normalizeCategoryValue(row.category) || row.category;
+    insert.run(value, row.category, count.count + index + 1);
+  }
+}
+
+function normalizeLegacyNewProducts(conn: DatabaseSync) {
+  conn.prepare("UPDATE products SET category = ? WHERE category = 'new'").run(defaultProductCategories[0].value);
 }
 
 function ignoreDuplicateColumn(action: () => void) {
@@ -327,7 +365,7 @@ export function getVariantsByProductId(productId: number, options: { includeInac
 
 export function getProducts(category?: string) {
   const conn = db();
-  const rows = category && category !== "all"
+  const rows = category && category !== "all" && category !== "new"
     ? conn.prepare("SELECT * FROM products WHERE archived = 0 AND category = ? ORDER BY sort_order ASC").all(category)
     : conn.prepare("SELECT * FROM products WHERE archived = 0 ORDER BY sort_order ASC").all();
   return (rows as ProductRow[]).map(mapProduct);
@@ -335,13 +373,140 @@ export function getProducts(category?: string) {
 
 export function getAdminProducts(category?: string) {
   const conn = db();
-  const rows = category && category !== "all"
+  const rows = category && category !== "all" && category !== "new"
     ? conn.prepare("SELECT * FROM products WHERE archived = 0 AND category = ? ORDER BY sort_order ASC").all(category)
     : conn.prepare("SELECT * FROM products WHERE archived = 0 ORDER BY sort_order ASC").all();
   return (rows as ProductRow[]).map((row) => ({
     ...mapProduct(row),
     variants: getVariantsByProductId(row.id, { includeInactive: true })
   }));
+}
+
+export function getProductCategories(): ProductCategory[] {
+  const rows = db().prepare(`
+    SELECT value, label, sort_order
+    FROM product_categories
+    ORDER BY sort_order ASC, id ASC
+  `).all() as ProductCategoryRow[];
+
+  return rows.map((row) => ({
+    value: row.value,
+    label: row.label,
+    sortOrder: row.sort_order
+  }));
+}
+
+export function getAdminProductCategories(): AdminProductCategory[] {
+  const rows = db().prepare(`
+    SELECT pc.value, pc.label, pc.sort_order, COUNT(p.id) AS product_count
+    FROM product_categories pc
+    LEFT JOIN products p ON p.category = pc.value AND p.archived = 0
+    GROUP BY pc.id
+    ORDER BY pc.sort_order ASC, pc.id ASC
+  `).all() as ProductCategoryRow[];
+
+  return rows.map((row) => ({
+    value: row.value,
+    label: row.label,
+    sortOrder: row.sort_order,
+    productCount: row.product_count ?? 0
+  }));
+}
+
+export function createProductCategory(label: string) {
+  const trimmedLabel = label.trim();
+  if (!trimmedLabel) throw new Error("Category name is required.");
+  if (["new", "all"].includes(trimmedLabel.toLowerCase())) {
+    throw new Error("NEW is reserved for all products.");
+  }
+
+  const value = normalizeCategoryValue(trimmedLabel) || `cat-${randomUUID().slice(0, 8)}`;
+  if (["new", "all"].includes(value)) {
+    throw new Error("NEW is reserved for all products.");
+  }
+
+  const existing = db().prepare("SELECT value FROM product_categories WHERE value = ? OR label = ?")
+    .get(value, trimmedLabel);
+  if (existing) throw new Error("Category already exists.");
+
+  const row = db().prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 AS sortOrder FROM product_categories")
+    .get() as { sortOrder: number };
+  db().prepare("INSERT INTO product_categories (value, label, sort_order) VALUES (?, ?, ?)")
+    .run(value, trimmedLabel, row.sortOrder);
+
+  return { value, label: trimmedLabel, sortOrder: row.sortOrder };
+}
+
+function deleteProductById(conn: DatabaseSync, id: number) {
+  const hasOrders = conn.prepare("SELECT id FROM order_items WHERE product_id = ? LIMIT 1").get(id);
+  if (hasOrders) {
+    conn.prepare("UPDATE product_variants SET active = 0 WHERE product_id = ?").run(id);
+    conn.prepare("UPDATE products SET archived = 1, stock = 0 WHERE id = ?").run(id);
+    return "archived" as const;
+  }
+
+  conn.prepare("DELETE FROM products WHERE id = ?").run(id);
+  return "deleted" as const;
+}
+
+export function deleteProductsByIds(ids: number[]) {
+  const productIds = Array.from(new Set(ids.filter((id) => Number.isInteger(id) && id > 0)));
+  if (productIds.length === 0) throw new Error("Product id is required.");
+  const conn = db();
+  let archived = 0;
+  let deleted = 0;
+
+  conn.exec("BEGIN");
+  try {
+    for (const id of productIds) {
+      const result = deleteProductById(conn, id);
+      if (result === "archived") archived += 1;
+      if (result === "deleted") deleted += 1;
+    }
+    conn.exec("COMMIT");
+  } catch (error) {
+    conn.exec("ROLLBACK");
+    throw error;
+  }
+
+  return { archived, deleted, total: archived + deleted };
+}
+
+export function deleteProductCategory(value: string, mode: "unassign" | "delete-products") {
+  const category = value.trim();
+  if (!category || ["new", "all"].includes(category)) throw new Error("Category is required.");
+  const conn = db();
+  const existing = conn.prepare("SELECT value FROM product_categories WHERE value = ?").get(category);
+  if (!existing) throw new Error("Category not found.");
+
+  const products = conn.prepare("SELECT id FROM products WHERE archived = 0 AND category = ?").all(category) as Array<{ id: number }>;
+  let archived = 0;
+  let deleted = 0;
+
+  conn.exec("BEGIN");
+  try {
+    if (mode === "delete-products") {
+      for (const product of products) {
+        const result = deleteProductById(conn, product.id);
+        if (result === "archived") archived += 1;
+        if (result === "deleted") deleted += 1;
+      }
+    } else {
+      conn.prepare("UPDATE products SET category = '' WHERE category = ?").run(category);
+    }
+    conn.prepare("DELETE FROM product_categories WHERE value = ?").run(category);
+    conn.exec("COMMIT");
+  } catch (error) {
+    conn.exec("ROLLBACK");
+    throw error;
+  }
+
+  return {
+    archived,
+    deleted,
+    unassigned: mode === "unassign" ? products.length : 0,
+    totalProducts: products.length
+  };
 }
 
 export function getProductBySlug(slug: string) {

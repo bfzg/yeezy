@@ -630,8 +630,20 @@
     @apply grid border-t border-ink;
   }
 
+  .product-list-toolbar {
+    @apply mb-3 flex items-center gap-3;
+  }
+
+  .product-list-toolbar .text-button:disabled {
+    @apply cursor-not-allowed border-[#d7d7d7] text-mute;
+  }
+
+  .product-list-toolbar .text-button.danger:not(:disabled) {
+    @apply bg-ink text-paper;
+  }
+
   .product-admin-card {
-    @apply relative grid w-full grid-cols-[32px_92px_1fr] items-center gap-4 border-b border-[#d8d8d8] px-2 py-3 text-left transition-[opacity,transform,background-color] duration-200 ease-out;
+    @apply relative grid w-full grid-cols-[28px_1fr] items-center gap-3 border-b border-[#d8d8d8] px-2 py-3 text-left transition-[opacity,transform,background-color] duration-200 ease-out;
   }
 
   .product-admin-card::before {
@@ -654,11 +666,23 @@
     @apply scale-[0.995] bg-[#f7f7f7] opacity-60;
   }
 
-  .product-admin-card img {
+  .product-bulk-check {
+    @apply relative z-10 inline-flex h-8 w-8 items-center justify-center;
+  }
+
+  .product-bulk-check input {
+    @apply h-4 w-4;
+  }
+
+  .product-admin-main {
+    @apply grid w-full grid-cols-[32px_92px_1fr] items-center gap-4 text-left;
+  }
+
+  .product-admin-main img {
     @apply h-[92px] w-[92px] object-contain;
   }
 
-  .product-admin-card span {
+  .product-admin-main span {
     @apply grid gap-1.5;
   }
 
@@ -676,6 +700,27 @@
 
   .data-row span {
     @apply text-mute;
+  }
+
+  .category-admin-row {
+    @apply grid items-center gap-3 border-b border-[#d8d8d8] py-3;
+    grid-template-columns: 1fr 160px 180px;
+  }
+
+  .category-create-inline {
+    @apply mb-8;
+  }
+
+  .category-create-inline input {
+    @apply h-[54px] w-full border border-ink bg-paper px-3 outline-none;
+  }
+
+  .category-admin-row span {
+    @apply grid gap-1;
+  }
+
+  .category-admin-row em {
+    @apply not-italic text-mute;
   }
 
   .spaced {

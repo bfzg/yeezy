@@ -6,24 +6,32 @@ import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { AdminCategorySelect } from "@/components/AdminCategorySelect";
 import { AdminImageManager } from "@/components/AdminImageManager";
+import type { ProductCategory } from "@/lib/categories";
 import type { Product } from "@/lib/db";
 import { showToast } from "@/lib/toast";
 
-export function AdminProductManager({ products }: { products: Product[] }) {
+export function AdminProductManager({ categories, products }: { categories: ProductCategory[]; products: Product[] }) {
   const router = useRouter();
   const [items, setItems] = useState(products);
   const itemsRef = useRef(products);
   const [editing, setEditing] = useState<Product | null>(products[0] ?? null);
   const [dragProductId, setDragProductId] = useState<number | null>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     itemsRef.current = products;
     setItems(products);
+    setSelectedProductIds((current) => new Set([...current].filter((id) => products.some((product) => product.id === id))));
     setEditing((current) => {
       if (!current) return products[0] ?? null;
       return products.find((product) => product.id === current.id) ?? products[0] ?? null;
     });
   }, [products]);
+
+  function categoryLabel(value: string) {
+    if (!value) return "未分类";
+    return categories.find((category) => category.value === value)?.label ?? value;
+  }
 
   async function save(formData: FormData) {
     if (!editing) return;
@@ -61,18 +69,65 @@ export function AdminProductManager({ products }: { products: Product[] }) {
   }
 
   async function remove() {
-    if (!editing || !confirm(`DELETE ${editing.sku}?`)) return;
+    if (!editing) return;
+    if (!confirm(`删除商品 ${editing.sku}？`)) return;
+    if (!confirm("再次确认删除。没有订单的商品会被删除，有历史订单的商品会归档隐藏。")) return;
     const response = await fetch(`/api/admin/products?id=${editing.id}`, { method: "DELETE" });
     if (response.ok) {
       const next = items.filter((product) => product.id !== editing.id);
       itemsRef.current = next;
       setItems(next);
       setEditing(next[0] ?? null);
+      setSelectedProductIds((current) => {
+        const nextSelected = new Set(current);
+        nextSelected.delete(editing.id);
+        return nextSelected;
+      });
       showToast("商品已删除", "success");
     } else {
       showToast("商品删除失败", "error");
     }
     router.refresh();
+  }
+
+  async function bulkRemove() {
+    const ids = [...selectedProductIds];
+    if (ids.length === 0) return;
+    if (!confirm(`删除选中的 ${ids.length} 个商品？`)) return;
+    if (!confirm("再次确认批量删除。没有订单的商品会被删除，有历史订单的商品会归档隐藏。")) return;
+
+    const response = await fetch(`/api/admin/products?ids=${ids.join(",")}`, { method: "DELETE" });
+    if (response.ok) {
+      const idSet = new Set(ids);
+      const next = items.filter((product) => !idSet.has(product.id));
+      itemsRef.current = next;
+      setItems(next);
+      setSelectedProductIds(new Set());
+      setEditing((current) => current && idSet.has(current.id) ? next[0] ?? null : current);
+      showToast("商品已批量删除", "success");
+    } else {
+      const payload = await response.json();
+      showToast(payload.error ?? "批量删除失败", "error");
+    }
+    router.refresh();
+  }
+
+  function toggleProductSelection(productId: number) {
+    setSelectedProductIds((current) => {
+      const next = new Set(current);
+      if (next.has(productId)) {
+        next.delete(productId);
+      } else {
+        next.add(productId);
+      }
+      return next;
+    });
+  }
+
+  function toggleAllProducts() {
+    setSelectedProductIds((current) => (
+      current.size === items.length ? new Set() : new Set(items.map((product) => product.id))
+    ));
   }
 
   function animateItems(next: Product[]) {
@@ -157,9 +212,22 @@ export function AdminProductManager({ products }: { products: Product[] }) {
     <section className="two-column">
       <div>
         <h2 className="section-title spaced">商品列表</h2>
+        <div className="product-list-toolbar">
+          <button className="text-button" onClick={toggleAllProducts} type="button">
+            {selectedProductIds.size === items.length && items.length > 0 ? "清空选择" : "全选"}
+          </button>
+          <button
+            className="text-button danger"
+            disabled={selectedProductIds.size === 0}
+            onClick={bulkRemove}
+            type="button"
+          >
+            批量删除 {selectedProductIds.size > 0 ? selectedProductIds.size : ""}
+          </button>
+        </div>
         <div className="data-list">
           {items.map((product) => (
-            <button
+            <div
               className={`product-admin-card ${editing?.id === product.id ? "selected" : ""} ${dragProductId === product.id ? "dragging" : ""}`}
               key={product.id}
               onDragOver={(event) => {
@@ -167,36 +235,42 @@ export function AdminProductManager({ products }: { products: Product[] }) {
                 if (dragProductId !== null) moveProduct(dragProductId, product.id);
               }}
               onDrop={(event) => event.preventDefault()}
-              onClick={() => setEditing(product)}
-              type="button"
-              aria-pressed={editing?.id === product.id}
               style={{ viewTransitionName: `admin-product-${product.id}` }}
             >
-              <span
-                className="drag-handle"
-                aria-hidden="true"
-                draggable
-                onDragStart={(event) => {
-                  event.stopPropagation();
-                  setDragProductId(product.id);
-                }}
-                onDragEnd={(event) => {
-                  event.stopPropagation();
-                  setDragProductId(null);
-                  saveProductOrder();
-                }}
-              >
-                <i />
-                <i />
-                <i />
-              </span>
-              <Image src={product.image} alt={product.name} width={96} height={96} />
-              <span>
-                <strong>{product.sku}</strong>
-                <em>{product.name} / {product.category}</em>
-                <em>{product.variants.map((variant) => `${variant.size}:${variant.stock - variant.reserved}`).join("  ")}</em>
-              </span>
-            </button>
+              <label className="product-bulk-check">
+                <input
+                  checked={selectedProductIds.has(product.id)}
+                  onChange={() => toggleProductSelection(product.id)}
+                  type="checkbox"
+                />
+              </label>
+              <button className="product-admin-main" onClick={() => setEditing(product)} type="button" aria-pressed={editing?.id === product.id}>
+                <span
+                  className="drag-handle"
+                  aria-hidden="true"
+                  draggable
+                  onDragStart={(event) => {
+                    event.stopPropagation();
+                    setDragProductId(product.id);
+                  }}
+                  onDragEnd={(event) => {
+                    event.stopPropagation();
+                    setDragProductId(null);
+                    saveProductOrder();
+                  }}
+                >
+                  <i />
+                  <i />
+                  <i />
+                </span>
+                <Image src={product.image} alt={product.name} width={96} height={96} />
+                <span>
+                  <strong>{product.sku}</strong>
+                  <em>{product.name} / {categoryLabel(product.category)}</em>
+                  <em>{product.variants.map((variant) => `${variant.size}:${variant.stock - variant.reserved}`).join("  ")}</em>
+                </span>
+              </button>
+            </div>
           ))}
         </div>
       </div>
@@ -214,7 +288,7 @@ export function AdminProductManager({ products }: { products: Product[] }) {
               />
             </div>
             <input name="name" defaultValue={editing.name} placeholder="商品名称" required />
-            <AdminCategorySelect defaultValue={editing.category} key={`${editing.id}-${editing.category}`} />
+            <AdminCategorySelect categories={categories} defaultValue={editing.category} key={`${editing.id}-${editing.category}`} />
             <label className="unit-field">
               <input name="price" defaultValue={(editing.priceCents / 100).toString()} placeholder="价格" required />
               <span className="text-xs">USD</span>

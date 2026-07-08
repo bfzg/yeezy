@@ -238,8 +238,17 @@ function ensureVariants(conn: DatabaseSync) {
 }
 
 function ensureAdmin(conn: DatabaseSync) {
-  const existing = conn.prepare("SELECT id FROM users WHERE role = 'admin' LIMIT 1").get();
-  if (existing) return;
+  const existing = conn.prepare("SELECT id, password_hash FROM users WHERE role = 'admin' LIMIT 1").get() as {
+    id: number;
+    password_hash: string;
+  } | undefined;
+  if (existing) {
+    if (existing.password_hash === "dev-admin" || existing.password_hash === "env-admin") {
+      conn.prepare("UPDATE users SET email = ?, name = ?, password_hash = ? WHERE id = ?")
+        .run(adminEnv.defaultAdminEmail.toLowerCase(), adminEnv.defaultAdminName, "env-admin", existing.id);
+    }
+    return;
+  }
   conn.prepare("INSERT INTO users (email, password_hash, name, role) VALUES (?, ?, ?, ?)")
     .run(adminEnv.defaultAdminEmail.toLowerCase(), "env-admin", adminEnv.defaultAdminName, "admin");
 }

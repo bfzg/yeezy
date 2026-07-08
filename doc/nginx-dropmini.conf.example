@@ -13,6 +13,7 @@
 #   sudo cp nginx-dropmini.conf.example /etc/nginx/sites-available/dropmini
 #   sudo ln -sf /etc/nginx/sites-available/dropmini /etc/nginx/sites-enabled/dropmini
 #   # 若 http{} 里已有同名 map，删本文件中的 map 段
+#   # 首次部署须先签发 dropmini.com 证书；证书不存在时不要直接启用 443 段
 #   sudo nginx -t && sudo systemctl reload nginx
 #
 # 证书：

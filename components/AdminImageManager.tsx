@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { showToast } from "@/lib/toast";
 
 export type AdminImageManagerHandle = {
   reset: () => void;
@@ -36,11 +37,18 @@ function AdminImageManager({
     if (!file) return;
     const formData = new FormData();
     formData.set("file", file);
-    const response = await fetch("/api/admin/upload", { method: "POST", body: formData });
-    const payload = await response.json();
-    if (payload.url) {
-      setImages((current) => uniqueImages([...current, payload.url]));
-      if (fileRef.current) fileRef.current.value = "";
+    try {
+      const response = await fetch("/api/admin/upload", { method: "POST", body: formData });
+      const payload = await response.json().catch(() => ({ error: "图片上传失败" }));
+      if (response.ok && payload.url) {
+        setImages((current) => uniqueImages([...current, payload.url]));
+        if (fileRef.current) fileRef.current.value = "";
+        showToast("图片已上传", "success");
+      } else {
+        showToast(payload.error ?? "图片上传失败", "error");
+      }
+    } catch {
+      showToast("图片上传失败", "error");
     }
   }
 

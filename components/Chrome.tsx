@@ -11,14 +11,6 @@ type CartLine = {
   quantity: number;
 };
 
-const DEFAULT_NAV_LABELS: Record<string, string> = {
-  mens: "MENS",
-  womens: "WOMENS",
-  footwear: "FOOTWEAR",
-  accessories: "ACCESSORIES",
-  slides: "SLIDES"
-};
-
 export function StoreChrome({
   cartCount,
   backHref,
@@ -120,7 +112,7 @@ export function StoreChrome({
     { value: "new", label: "NEW", href: "/" },
     ...categories.map((category) => ({
       value: category.value,
-      label: DEFAULT_NAV_LABELS[category.value] ?? category.label,
+      label: category.label,
       href: `/?category=${encodeURIComponent(category.value)}`
     }))
   ];

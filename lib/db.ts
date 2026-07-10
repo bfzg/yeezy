@@ -140,6 +140,7 @@ export function db() {
     database.exec(readFileSync(schemaPath, "utf8"));
     migrate(database);
     ensureProductCategories(database);
+    removeUnusedDefaultCategories(database);
     seedIfEmpty(database);
     normalizeLegacyNewProducts(database);
     ensureVariants(database);
@@ -157,10 +158,6 @@ function ensureProductCategories(conn: DatabaseSync) {
     ON CONFLICT(value) DO NOTHING
   `);
 
-  for (const category of defaultProductCategories) {
-    insert.run(category.value, category.label, category.sortOrder);
-  }
-
   const productCategories = conn.prepare(`
     SELECT DISTINCT category
     FROM products
@@ -176,6 +173,20 @@ function ensureProductCategories(conn: DatabaseSync) {
 
 function normalizeLegacyNewProducts(conn: DatabaseSync) {
   conn.prepare("UPDATE products SET category = ? WHERE category = 'new'").run(defaultProductCategories[0].value);
+}
+
+function removeUnusedDefaultCategories(conn: DatabaseSync) {
+  const remove = conn.prepare(`
+    DELETE FROM product_categories
+    WHERE value = ?
+      AND NOT EXISTS (
+        SELECT 1 FROM products WHERE archived = 0 AND category = product_categories.value
+      )
+  `);
+
+  for (const category of defaultProductCategories) {
+    remove.run(category.value);
+  }
 }
 
 function ignoreDuplicateColumn(action: () => void) {

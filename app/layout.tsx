@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { ToastHost } from "@/components/ToastHost";
 import { absoluteUrl, siteConfig, siteTitle } from "@/lib/site";
 import "./globals.css";
@@ -61,13 +62,36 @@ export const metadata: Metadata = {
   },
 };
 
+const googleAnalyticsId = parseGoogleAnalyticsId(process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID);
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        {googleAnalyticsId ? (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(googleAnalyticsId)}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${googleAnalyticsId}');
+              `}
+            </Script>
+          </>
+        ) : null}
         <ToastHost />
         {children}
       </body>
     </html>
   );
+}
+
+function parseGoogleAnalyticsId(value: string | undefined) {
+  const id = value?.trim() ?? "";
+  return /^G-[A-Z0-9]+$/i.test(id) ? id : "";
 }

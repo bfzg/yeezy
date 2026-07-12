@@ -49,6 +49,7 @@ Copy `.env.example` to `.env.local` (or `.env`) and fill in your values. **Do no
 | `STRIPE_SECRET_KEY` | Optional | Only needed if Apple Pay via Stripe is enabled. |
 | `NEXT_PUBLIC_APPLE_PAY_ENABLED` | No | `true` / `false` (default `false`). |
 | `APPLE_PAY_MERCHANT_ID` | Optional | Apple Pay merchant identifier. |
+| `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | Optional | Google Analytics 4 measurement ID, for example `G-XXXXXXXXXX`. |
 
 ### PayPal setup
 
@@ -134,6 +135,7 @@ npm run dev
 | `STRIPE_SECRET_KEY` | 可选 | 仅启用 Stripe Apple Pay 时需要 |
 | `NEXT_PUBLIC_APPLE_PAY_ENABLED` | 否 | 是否启用 Apple Pay，默认 `false` |
 | `APPLE_PAY_MERCHANT_ID` | 可选 | Apple Pay 商户 ID |
+| `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` | 可选 | Google Analytics 4 衡量 ID，例如 `G-XXXXXXXXXX` |
 
 **PayPal 配置步骤：**
 

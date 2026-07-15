@@ -53,7 +53,7 @@ export function createOrderFromSubmittedCart(items: CheckoutCartItem[], input: C
       name: product.name,
       image: product.image,
       priceCents: variant?.priceCents ?? product.priceCents,
-      size: variant?.size ?? String(item.size ?? "2"),
+      size: variant?.size ?? String(item.size ?? "默认"),
       quantity,
       stock
     } satisfies CartLine;

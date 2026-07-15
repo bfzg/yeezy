@@ -1,26 +1,61 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminCategorySelect } from "@/components/AdminCategorySelect";
 import { AdminImageManager, type AdminImageManagerHandle } from "@/components/AdminImageManager";
 import type { ProductCategory } from "@/lib/categories";
 import { showToast } from "@/lib/toast";
 
+type DraftVariant = {
+  id: number;
+  size: string;
+  price: string;
+};
+
+function emptyVariant(): DraftVariant {
+  return { id: Date.now() + Math.random(), size: "", price: "" };
+}
+
 export function AdminTools({ categories }: { categories: ProductCategory[] }) {
   const router = useRouter();
   const imageManagerRef = useRef<AdminImageManagerHandle>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [variants, setVariants] = useState<DraftVariant[]>([emptyVariant()]);
+
+  function addVariant() {
+    setVariants((current) => [...current, emptyVariant()]);
+  }
+
+  function updateVariant(id: number, field: "size" | "price", value: string) {
+    setVariants((current) => current.map((variant) => (
+      variant.id === id ? { ...variant, [field]: value } : variant
+    )));
+  }
+
+  function removeVariant(id: number) {
+    setVariants((current) => {
+      const next = current.filter((variant) => variant.id !== id);
+      return next.length > 0 ? next : [emptyVariant()];
+    });
+  }
 
   async function createProduct(formData: FormData) {
+    const payload = {
+      ...Object.fromEntries(formData.entries()),
+      variants: variants
+        .map((variant) => ({ size: variant.size.trim(), price: variant.price.trim() }))
+        .filter((variant) => variant.size)
+    };
     const response = await fetch("/api/admin/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(Object.fromEntries(formData.entries()))
+      body: JSON.stringify(payload)
     });
     if (response.ok) {
       formRef.current?.reset();
       imageManagerRef.current?.reset();
+      setVariants([emptyVariant()]);
       showToast("商品已创建", "success");
       router.refresh();
     } else {
@@ -42,7 +77,32 @@ export function AdminTools({ categories }: { categories: ProductCategory[] }) {
             <input name="stock" placeholder="库存" defaultValue="12" />
             <span>件</span>
           </label>
-          <input name="sizes" placeholder="尺码：1,2,3" defaultValue="1,2,3" />
+          <div className="variant-create-panel">
+            <div className="variant-create-head">
+              <span>规格</span>
+            </div>
+            <div className="variant-create-list">
+              {variants.map((variant) => (
+                <div className="variant-create-row" key={variant.id}>
+                  <input
+                    value={variant.size}
+                    onChange={(event) => updateVariant(variant.id, "size", event.target.value)}
+                    placeholder="规格名称，如 L / XL / XXL"
+                  />
+                  <label className="unit-field compact">
+                    <input
+                      value={variant.price}
+                      onChange={(event) => updateVariant(variant.id, "price", event.target.value)}
+                      placeholder="定价"
+                    />
+                    <span>USD</span>
+                  </label>
+                  <button type="button" onClick={() => removeVariant(variant.id)} aria-label="删除规格">删除</button>
+                </div>
+              ))}
+            </div>
+            <button className="variant-create-add" type="button" onClick={addVariant} aria-label="新增规格">+</button>
+          </div>
           <AdminImageManager ref={imageManagerRef} initialImages={[]} />
           <textarea name="description" placeholder="描述" />
           <textarea name="material" placeholder="材质" />

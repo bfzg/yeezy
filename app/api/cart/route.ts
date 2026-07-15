@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const productId = Number(body.productId);
   const variantId = body.variantId ? Number(body.variantId) : null;
   const variant = variantId ? getVariantById(variantId) : null;
-  const size = String(variant?.size ?? body.size ?? "2");
+  const size = String(variant?.size ?? body.size ?? "默认");
   const quantity = Math.max(1, Number(body.quantity ?? 1));
   if (variant && variant.productId !== productId) {
     return NextResponse.json({ error: "Selected variant does not belong to this product." }, { status: 400 });

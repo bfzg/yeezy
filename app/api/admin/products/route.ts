@@ -6,6 +6,11 @@ function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
+function toPriceCents(value: unknown, fallbackCents = 0) {
+  const price = Number(value);
+  return Number.isFinite(price) ? Math.round(price * 100) : fallbackCents;
+}
+
 export async function POST(request: Request) {
   const admin = await requireAdmin();
   if (!admin) return NextResponse.json({ error: "Forbidden." }, { status: 403 });
@@ -13,7 +18,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const sku = String(body.sku);
   const slug = body.slug ? slugify(String(body.slug)) : slugify(sku);
-  const priceCents = Math.round(Number(body.price ?? 0) * 100);
+  const priceCents = toPriceCents(body.price);
   const gallery = String(body.gallery ?? body.image ?? "").split("\n").map((item) => item.trim()).filter(Boolean);
 
   const result = db().prepare(`
@@ -40,14 +45,21 @@ export async function POST(request: Request) {
   );
 
   const productId = Number(result.lastInsertRowid);
-  const sizes = String(body.sizes ?? "1,2,3").split(",").map((size) => size.trim()).filter(Boolean);
-  const perSizeStock = Math.max(0, Math.floor(Number(body.stock ?? 0) / Math.max(sizes.length, 1)));
+  const variants = Array.isArray(body.variants)
+    ? body.variants
+      .map((variant: { size?: unknown; price?: unknown }) => ({
+        size: String(variant.size ?? "").trim(),
+        priceCents: toPriceCents(variant.price, priceCents)
+      }))
+      .filter((variant: { size: string }) => variant.size)
+    : [];
+  const perVariantStock = Math.max(0, Math.floor(Number(body.stock ?? 0) / Math.max(variants.length, 1)));
   const insertVariant = db().prepare(`
     INSERT INTO product_variants (product_id, sku, size, color, price_cents, stock)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
-  for (const size of sizes) {
-    insertVariant.run(productId, `${sku}-${size}`, size, body.color ?? "BLACK", priceCents, perSizeStock);
+  for (const variant of variants) {
+    insertVariant.run(productId, `${sku}-${variant.size}`, variant.size, body.color ?? "BLACK", variant.priceCents, perVariantStock);
   }
 
   return NextResponse.json({ id: productId, slug }, { status: 201 });

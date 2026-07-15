@@ -544,6 +544,36 @@
     @apply min-h-[86px] resize-y;
   }
 
+  .variant-create-panel {
+    @apply grid gap-3 border border-ink bg-paper p-3;
+  }
+
+  .variant-create-head {
+    @apply flex items-center justify-between gap-3;
+  }
+
+  .variant-create-head span {
+    @apply font-bold;
+  }
+
+  .variant-create-add,
+  .variant-create-row button {
+    @apply min-h-10 border border-ink bg-paper px-3 font-bold;
+  }
+
+  .variant-create-add {
+    @apply flex w-full items-center justify-center;
+  }
+
+  .variant-create-list {
+    @apply grid gap-2.5;
+  }
+
+  .variant-create-row {
+    @apply grid items-center gap-2.5;
+    grid-template-columns: minmax(0, 1fr) minmax(128px, 180px) auto;
+  }
+
   .custom-select {
     @apply relative;
   }
@@ -1188,6 +1218,7 @@
   }
 
   .two-column,
+  .variant-create-row,
   .variant-admin-row,
   .admin-table-head,
   .admin-table-row {

@@ -99,7 +99,8 @@ export default async function ProductDetail({ params }: { params: Promise<{ slug
               slug: product.slug,
               name: product.name,
               image: product.image,
-              priceCents: product.priceCents
+              priceCents: product.priceCents,
+              stock: product.stock
             }}
             variants={product.variants}
           />

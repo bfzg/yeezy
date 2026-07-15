@@ -10,6 +10,7 @@ type AddProduct = {
   name: string;
   image: string;
   priceCents: number;
+  stock: number;
 };
 
 type LocalCartLine = {
@@ -28,6 +29,7 @@ type LocalCartLine = {
 };
 
 const CART_KEY = "yezi_cart_v1";
+const DEFAULT_SIZE = "默认";
 
 function readCart(): LocalCartLine[] {
   try {
@@ -47,12 +49,14 @@ export function AddToCart({ product, variants }: { product: AddProduct; variants
   const activeVariants = variants.filter((variant) => variant.active && variant.archived === false);
   const [variantId, setVariantId] = useState(activeVariants[0]?.id ?? 0);
   const selected = activeVariants.find((variant) => variant.id === variantId);
+  const hasVariants = activeVariants.length > 0;
+  const stock = selected ? selected.stock - selected.reserved : product.stock;
 
   function add(event: React.MouseEvent<HTMLButtonElement>) {
-    if (!selected) return;
+    if (stock <= 0) return;
     setLoading(true);
     const lines = readCart();
-    const id = `${product.id}:${selected.id}:${selected.size}`;
+    const id = selected ? `${product.id}:${selected.id}:${selected.size}` : `${product.id}:default`;
     const existing = lines.find((line) => line.id === id);
     if (existing) {
       existing.quantity += 1;
@@ -60,16 +64,16 @@ export function AddToCart({ product, variants }: { product: AddProduct; variants
       lines.push({
         id,
         productId: product.id,
-        variantId: selected.id,
+        variantId: selected?.id ?? null,
         sku: product.sku,
-        variantSku: selected.sku,
+        variantSku: selected?.sku ?? null,
         slug: product.slug,
         name: product.name,
         image: product.image,
-        priceCents: selected.priceCents || product.priceCents,
-        size: selected.size,
+        priceCents: selected?.priceCents || product.priceCents,
+        size: selected?.size ?? DEFAULT_SIZE,
         quantity: 1,
-        stock: selected.stock - selected.reserved
+        stock
       });
     }
     writeCart(lines);
@@ -85,20 +89,22 @@ export function AddToCart({ product, variants }: { product: AddProduct; variants
 
   return (
     <div className="variant-picker">
-      <div className="size-row" aria-label="Size">
-        {activeVariants.map((variant) => (
-          <button
-            className={variant.id === variantId ? "active" : ""}
-            disabled={variant.stock - variant.reserved <= 0}
-            key={variant.id}
-            onClick={() => setVariantId(variant.id)}
-            type="button"
-          >
-            {variant.size}
-          </button>
-        ))}
-      </div>
-      <button className="add-button" onClick={add} disabled={loading || !selected} aria-label="Add to cart">
+      {hasVariants ? (
+        <div className="size-row" aria-label="Size">
+          {activeVariants.map((variant) => (
+            <button
+              className={variant.id === variantId ? "active" : ""}
+              disabled={variant.stock - variant.reserved <= 0}
+              key={variant.id}
+              onClick={() => setVariantId(variant.id)}
+              type="button"
+            >
+              {variant.size}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <button className="add-button" onClick={add} disabled={loading || stock <= 0} aria-label="Add to cart">
         {loading ? "..." : "+"}
       </button>
     </div>
